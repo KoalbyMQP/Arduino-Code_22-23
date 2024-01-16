@@ -1,5 +1,5 @@
-# Arduino-Code
-## Arduino Side of Poppy
+# Arduino-Code_23-24
+## Arduino Side of Koalby/Ava
 
 ### Included Programs
 - Dynamixel_Readdress - Readdress a Dynamixel motor. Currently in need of fixing/commenting
@@ -16,6 +16,11 @@
 ### Firmware
 
 Include this library
-https://robottini.altervista.org/dongbu-herkulex-arduino-library-2
-in ArduinoIDE as well as DynamixelShield library
+https://github.com/Arduinolibrary/DFRobot_Herkulex_library/raw/master/Herkulex.zip
+in ArduinoIDE
 
+## Branches (Update as new branches are made)
+### main
+Ready to deploy for good production codebase on Ava's Arduino
+### dev
+Ready to test development codebase on Ava's Arduino

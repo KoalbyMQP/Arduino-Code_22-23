@@ -33,10 +33,10 @@ void ArduinoPoppy::Setup() {
 #endif
 
   // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version - 1.0 for our motors
-  dxl.setPortProtocolVersion(1.0); //This differs for Dynamixel 320's, will need to check before each command
+//   dxl.setPortProtocolVersion(1.0); //This differs for Dynamixel 320's, will need to check before each command
 
   //Start HerkuleX
-  Herkulex.beginSerial1(115200); //open serial port 1 for HerkuleX's
+  Herkulex.beginSerial2(115200); //open serial port 1 for HerkuleX's
   delay(100);
 }
 
@@ -113,19 +113,19 @@ void ArduinoPoppy::Initialize() {
     else//Dynamixel
     {
       // Turn off torque when configuring items in EEPROM area
-      dxl.torqueOff(idArr[i].hexID);
-      dxl.setOperatingMode(idArr[i].hexID, OP_POSITION);
-      dxl.torqueOn(idArr[i].hexID);
-      dxl.ledOn(idArr[i].hexID);
+    //   dxl.torqueOff(idArr[i].hexID);
+    //   dxl.setOperatingMode(idArr[i].hexID, OP_POSITION);
+    //   dxl.torqueOn(idArr[i].hexID);
+    //   dxl.ledOn(idArr[i].hexID);
     }
   delay(500);
   //Move each motor to initialized position
   for (int i = 0; i < MOTOR_COUNT; i++) {
     if (idArr[i].type == HERK) {
       Herkulex.torqueON(idArr[i].hexID);
-      Herkulex.moveOneAngle(idArr[i].hexID, idArr[i].homePos, 1000, LED_GREEN);
+      Herkulex.moveOneAngle(idArr[i].hexID, idArr[i].homePos, 1000, LED_GREEN, idArr[i].is0601);
       //I cannot explain why this line is needed, but I swear on my life removing it makes the motor stop working right in init
-      Herkulex.getAngle(idArr[i].hexID);
+      Herkulex.getAngle(idArr[i].hexID, idArr[i].is0601);
     } else {
       //      dxl.setGoalPosition(idArr[i].hexID, idArr[i].homePos, UNIT_DEGREE);
     }
@@ -139,12 +139,9 @@ void ArduinoPoppy::Shutdown() {
 #endif
 
   for (int motorNum = 0; motorNum < MOTOR_COUNT; motorNum++) {
-    if (idArr[motorNum].type == HERK) {
       Herkulex.torqueOFF(idArr[motorNum].hexID);
-      Herkulex.setLed(idArr[motorNum].hexID, LED_RED);
-    } else {
-      dxl.torqueOff(idArr[motorNum].hexID);
-    }
+      Herkulex.setLed(idArr[motorNum].hexID, LED_BLUE);
+    
   }
 }
 
@@ -156,32 +153,32 @@ void ArduinoPoppy::GetPosition() {
 
   //Print the Angle
   //UPDATE: returns distance from home
-  if (idArr[motorNum].type == HERK) {
+//   if (idArr[motorNum].type == HERK) {
 
     float angle = 0;
     int attempt = 0;
     do {
-      angle = Herkulex.getAngle(idArr[motorNum].hexID);
+      angle = Herkulex.getAngle(idArr[motorNum].hexID, idArr[motorNum].is0601);
       attempt++;
     } while (angle < -164 && attempt < 10);
-    //Serial2.println(angle);
-    //Serial2.println(map(angle,    idArr[motorNum].minPos,idArr[motorNum].maxPos,  0,100));
+    //Serial.println(angle);
+    //Serial.println(map(angle,    idArr[motorNum].minPos,idArr[motorNum].maxPos,  0,100));
     if (idArr[motorNum].minPos < idArr[motorNum].maxPos)
       SERIAL_MONITOR.println((int)(angle - idArr[motorNum].homePos));
     else
       SERIAL_MONITOR.println((int)(-angle + idArr[motorNum].homePos));
 
-  } else {
-    float angle = 0;
-    angle = dxl.getPresentPosition(idArr[motorNum].hexID, UNIT_DEGREE);
+//   } else {
+//     float angle = 0;
+//     angle = dxl.getPresentPosition(idArr[motorNum].hexID, UNIT_DEGREE);
 
-    //Serial2.println(angle);
-    //Serial2.println(map(angle,    idArr[motorNum].minPos,idArr[motorNum].maxPos,  0,100));
-    if (idArr[motorNum].minPos < idArr[motorNum].maxPos)
-      SERIAL_MONITOR.println((int)(angle - idArr[motorNum].homePos));
-    else
-      SERIAL_MONITOR.println((int)(-angle + idArr[motorNum].homePos));
-  }
+//     //Serial2.println(angle);
+//     //Serial2.println(map(angle,    idArr[motorNum].minPos,idArr[motorNum].maxPos,  0,100));
+//     if (idArr[motorNum].minPos < idArr[motorNum].maxPos)
+//       SERIAL_MONITOR.println((int)(angle - idArr[motorNum].homePos));
+//     else
+//       SERIAL_MONITOR.println((int)(-angle + idArr[motorNum].homePos));
+//   }
 }
 
 void ArduinoPoppy::SetPosition() { //Set position, use default time of motion
@@ -208,10 +205,11 @@ void ArduinoPoppy::SetPosition() { //Set position, use default time of motion
       SERIAL_MONITOR.println(mappedTarget);*/
   }
 
-  if (idArr[motorNum].type == HERK)
-    Herkulex.moveOneAngle(idArr[motorNum].hexID, mappedTarget, 1000, LED_BLUE); //move motor with 300 speed
-  else //Dynamixel
-    dxl.setGoalPosition(idArr[motorNum].hexID, mappedTarget, UNIT_DEGREE);
+  if (idArr[motorNum].type == HERK) {
+    Herkulex.moveOneAngle(idArr[motorNum].hexID, mappedTarget, 1000, LED_BLUE, idArr[motorNum].is0601); //move motor with 300 speed
+  } else { //Dynamixel
+    // dxl.setGoalPosition(idArr[motorNum].hexID, mappedTarget, UNIT_DEGREE);
+  }
 }
 
 void ArduinoPoppy::SetRotationOn() {
@@ -255,10 +253,11 @@ void ArduinoPoppy::SetPositionT() { //Set position with time of motion
   }
 
   if (idArr[motorNum].type == HERK)
-    Herkulex.moveOneAngle(idArr[motorNum].hexID, mappedTarget, tTime, LED_BLUE); //move motor with 300 speed
-  else //Dynamixel
+    Herkulex.moveOneAngle(idArr[motorNum].hexID, mappedTarget, tTime, LED_BLUE, idArr[motorNum].is0601); //move motor with 300 speed
+  else {//Dynamixel
     //TODO: timed motion for Dynamixel
-    dxl.setGoalPosition(idArr[motorNum].hexID, mappedTarget, UNIT_DEGREE);
+    // dxl.setGoalPosition(idArr[motorNum].hexID, mappedTarget, UNIT_DEGREE);
+  }
 }
 
 //Caution: might move FAST when starting, no safties currently implemented for that
@@ -316,17 +315,12 @@ void ArduinoPoppy::SetCompliant() { //Set position, use default time of motion
   int setTorqueOn = getIntFromSerial("Enter Motor Compliance (0 = off, 1 = on) ");
 
   //Send parsed command to the motor
-  if (idArr[motorNum].type == HERK)
-    if (setTorqueOn) {
-      //      SERIAL_MONITOR.print("Set to compliant: ");
-      SERIAL_MONITOR.println(motorNum);
-      compliantMotorSet.add(motorNum);
-    } else
-      compliantMotorSet.sub(motorNum);
-  else //Dynamixel
-  {
-    //TODO implement
-  }
+  if (setTorqueOn) {
+    //      SERIAL_MONITOR.print("Set to compliant: ");
+    SERIAL_MONITOR.println(motorNum);
+    compliantMotorSet.add(motorNum);
+  } else
+    compliantMotorSet.sub(motorNum);
 }
 
 
@@ -463,14 +457,14 @@ void ArduinoPoppy::UpdateRobot() {
     for (int i = 0; i < 4; i++) {
       int rowRead = mirrorArray[i][0];
       int rowSet = mirrorArray[i][1];
-      int pos1 = Herkulex.getAngle(idArr[rowRead].hexID) - idArr[rowRead].homePos + idArr[rowSet].homePos;
+      int pos1 = Herkulex.getAngle(idArr[rowRead].hexID, idArr[rowSet].is0601) - idArr[rowRead].homePos + idArr[rowSet].homePos;
 
       if (pos1 > -164)
       {
 
         //Send parsed command to the motor
         int mappedTarget = min(max(pos1, idArr[rowSet].minPos), idArr[rowSet].maxPos);
-        Herkulex.moveOneAngle(idArr[rowSet].hexID, mappedTarget, 200, LED_BLUE); //move motor
+        Herkulex.moveOneAngle(idArr[rowSet].hexID, mappedTarget, 200, LED_BLUE, idArr[rowSet].is0601); //move motor
       }
     }
   }
@@ -484,7 +478,7 @@ void ArduinoPoppy::UpdateRobot() {
       Herkulex.torqueOFF(idArr[n].hexID);
     else
       Herkulex.torqueON(idArr[n].hexID);
-    Herkulex.moveOneAngle(idArr[n].hexID, Herkulex.getAngle(idArr[n].hexID), 200, 2);
+    Herkulex.moveOneAngle(idArr[n].hexID, Herkulex.getAngle(idArr[n].hexID), 200, 2, idArr[n].is0601);
     n = compliantMotorSet.next();
   }
   compliancePWMCounter++;
